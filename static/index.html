@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>文献阅读助手</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+    </svg>
+    <span>文献阅读助手</span>
+  </div>
+
+  <form id="uploadForm" class="toolbar-form">
+    <label class="btn btn-upload" for="fileInput">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      选择 PDF
+    </label>
+    <input type="file" id="fileInput" accept=".pdf" hidden />
+    <span id="fileName" class="file-chip">未选择文件</span>
+
+    <div class="key-field">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+      </svg>
+      <input id="apiKey" type="password" placeholder="DeepSeek API Key" autocomplete="off" />
+      <button type="button" id="toggleKey" class="eye-btn" title="显示/隐藏">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+    </div>
+
+    <button type="submit" id="analyzeBtn" class="btn btn-analyze">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+      开始分析
+    </button>
+  </form>
+
+  <div id="progressBox" class="progress-wrap hidden">
+    <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
+    <span id="progressText">0 / 0</span>
+  </div>
+</header>
+
+<!-- ── Empty state ── -->
+<div id="emptyState" class="empty-state">
+  <div class="empty-art">
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+    </svg>
+  </div>
+  <h2>上传 PDF 开始阅读</h2>
+  <p>左侧显示英文原文 · 右侧实时生成中文翻译</p>
+  <ul class="feature-list">
+    <li>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      重要句子和术语自动加粗，助力快速阅读
+    </li>
+    <li>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      每段旁边一句话批注概括
+    </li>
+    <li>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      中英双栏同步滚动，拖拽分界线自由调整
+    </li>
+  </ul>
+</div>
+
+<!-- ── Reader ── -->
+<div id="readerLayout" class="reader-layout hidden">
+
+  <!-- PDF panel -->
+  <div class="panel panel-pdf" id="pdfPanel">
+    <div class="panel-header">
+      <span class="panel-title">英文原文（PDF）</span>
+      <div class="pdf-header-right">
+        <button id="toggleZhBtn" class="toggle-zh-btn" title="隐藏中文翻译">隐藏译文</button>
+        <div class="zoom-controls">
+          <button class="zoom-btn" id="zoomOut" title="缩小（-）">−</button>
+          <span id="zoomLabel" class="zoom-label">100%</span>
+          <button class="zoom-btn" id="zoomIn" title="放大（+）">+</button>
+          <button class="zoom-btn zoom-fit" id="zoomFit" title="适应宽度">适应</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel-body pdf-scroll" id="pdfScroll">
+      <div id="pdfViewer" class="pdf-viewer"></div>
+    </div>
+  </div>
+
+  <!-- Draggable divider -->
+  <div class="vdivider" id="vdivider">
+    <div class="divider-handle">
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- Chinese panel -->
+  <div class="panel panel-zh" id="zhPanel">
+    <div class="panel-header zh-header">
+      <span class="panel-title zh-title">中文翻译</span>
+      <div class="ann-resizer" id="annResizer">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <span class="panel-title ann-title">批注</span>
+    </div>
+    <div class="panel-body zh-scroll" id="zhScroll">
+      <div id="zhContent"></div>
+    </div>
+  </div>
+
+  <!-- Standalone annotation panel (shown when Chinese panel is hidden) -->
+  <div class="panel panel-ann-standalone hidden" id="annStandalone">
+    <div class="panel-header">
+      <span class="panel-title">批注概要</span>
+    </div>
+    <div class="panel-body ann-standalone-scroll" id="annStandaloneScroll">
+      <div id="annStandaloneContent"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
