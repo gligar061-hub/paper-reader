@@ -13,7 +13,6 @@ const DPR = Math.min(window.devicePixelRatio || 1, 2);
 let pdfDoc          = null;
 let pdfZoom         = 1.0;      // user zoom multiplier (1 = fit width)
 let pageOffsets     = [];       // cumulative Y (px) start of each page
-let lastRenderedPage = -1;      // tracks page dividers in Chinese panel
 let zhVisible       = true;     // whether the Chinese translation panel is shown
 let allSegments     = [];       // all paragraph segments accumulated for standalone ann mode
 let isScrollSyncing = false;    // prevents scroll sync loop between PDF and standalone ann
@@ -353,11 +352,6 @@ function createParaRow(seg, page, isError) {
 function appendPageResult(data) {
   const { page = 1, segments = [], error } = data;
 
-  if (page !== lastRenderedPage) {
-    zhContent.appendChild(createPageDivider(page));
-    lastRenderedPage = page;
-  }
-
   for (const seg of segments) {
     if (seg.type === 'heading') {
       zhContent.appendChild(createHeadingRow(seg.en || ''));
@@ -437,6 +431,27 @@ function scrollAnnToPage(pageNum) {
 }
 
 /* ════════════════════════════════════════
+   Jump-Highlight Helpers
+════════════════════════════════════════ */
+function flash(el) {
+  if (!el) return;
+  el.classList.remove('jump-highlight');
+  void el.offsetWidth;
+  el.classList.add('jump-highlight');
+  el.addEventListener('animationend', () => el.classList.remove('jump-highlight'), { once: true });
+}
+
+function highlightZhPage(pageNum) {
+  zhContent.querySelectorAll(`.para-row[data-page="${pageNum}"]`).forEach(flash);
+}
+function highlightPdfPage(pageNum) {
+  flash(pdfViewer.querySelector(`.pdf-page-wrapper[data-page="${pageNum}"]`));
+}
+function highlightAnnPage(pageNum) {
+  annStandaloneContent.querySelectorAll(`.ann-card-standalone[data-page="${pageNum}"]`).forEach(flash);
+}
+
+/* ════════════════════════════════════════
    Click-to-Jump
 ════════════════════════════════════════ */
 pdfScroll.addEventListener('click', (e) => {
@@ -445,8 +460,8 @@ pdfScroll.addEventListener('click', (e) => {
   const wrapper = e.target.closest('.pdf-page-wrapper');
   if (!wrapper) return;
   const page = parseInt(wrapper.dataset.page) || 1;
-  if (zhVisible) scrollZhToPage(page);
-  else scrollAnnToPage(page);
+  if (zhVisible) { scrollZhToPage(page); highlightZhPage(page); }
+  else           { scrollAnnToPage(page); highlightAnnPage(page); }
 });
 
 zhScroll.addEventListener('click', (e) => {
@@ -455,6 +470,7 @@ zhScroll.addEventListener('click', (e) => {
   if (!row) return;
   const page = parseInt(row.dataset.page) || 1;
   scrollPdfToPage(page);
+  highlightPdfPage(page);
 });
 
 annStandaloneScroll.addEventListener('click', (e) => {
@@ -463,6 +479,7 @@ annStandaloneScroll.addEventListener('click', (e) => {
   if (!card) return;
   const page = parseInt(card.dataset.page) || 1;
   scrollPdfToPage(page);
+  highlightPdfPage(page);
 });
 
 /* Synchronized scrolling between PDF and standalone annotation panel */
@@ -577,7 +594,6 @@ function resetReader() {
   pdfDoc = null;
   pdfZoom = 1.0;
   pageOffsets = [];
-  lastRenderedPage = -1;
   paraCounter = 0;
   allSegments = [];
   if (!zhVisible) {
