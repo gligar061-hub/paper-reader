@@ -301,13 +301,6 @@ function streamAnalysis(sessionId, total) {
 /* ════════════════════════════════════════
    Render — page result (heading + paragraphs)
 ════════════════════════════════════════ */
-function createPageDivider(pageNum) {
-  const div = document.createElement('div');
-  div.className = 'page-divider';
-  div.innerHTML = `<span>第 ${pageNum} 页</span>`;
-  return div;
-}
-
 function createHeadingRow(text) {
   const div = document.createElement('div');
   div.className = 'heading-row';
@@ -431,27 +424,6 @@ function scrollAnnToPage(pageNum) {
 }
 
 /* ════════════════════════════════════════
-   Jump-Highlight Helpers
-════════════════════════════════════════ */
-function flash(el) {
-  if (!el) return;
-  el.classList.remove('jump-highlight');
-  void el.offsetWidth;
-  el.classList.add('jump-highlight');
-  el.addEventListener('animationend', () => el.classList.remove('jump-highlight'), { once: true });
-}
-
-function highlightZhPage(pageNum) {
-  zhContent.querySelectorAll(`.para-row[data-page="${pageNum}"]`).forEach(flash);
-}
-function highlightPdfPage(pageNum) {
-  flash(pdfViewer.querySelector(`.pdf-page-wrapper[data-page="${pageNum}"]`));
-}
-function highlightAnnPage(pageNum) {
-  annStandaloneContent.querySelectorAll(`.ann-card-standalone[data-page="${pageNum}"]`).forEach(flash);
-}
-
-/* ════════════════════════════════════════
    Click-to-Jump
 ════════════════════════════════════════ */
 pdfScroll.addEventListener('click', (e) => {
@@ -460,8 +432,8 @@ pdfScroll.addEventListener('click', (e) => {
   const wrapper = e.target.closest('.pdf-page-wrapper');
   if (!wrapper) return;
   const page = parseInt(wrapper.dataset.page) || 1;
-  if (zhVisible) { scrollZhToPage(page); highlightZhPage(page); }
-  else           { scrollAnnToPage(page); highlightAnnPage(page); }
+  if (zhVisible) scrollZhToPage(page);
+  else scrollAnnToPage(page);
 });
 
 zhScroll.addEventListener('click', (e) => {
@@ -470,7 +442,6 @@ zhScroll.addEventListener('click', (e) => {
   if (!row) return;
   const page = parseInt(row.dataset.page) || 1;
   scrollPdfToPage(page);
-  highlightPdfPage(page);
 });
 
 annStandaloneScroll.addEventListener('click', (e) => {
@@ -479,7 +450,6 @@ annStandaloneScroll.addEventListener('click', (e) => {
   if (!card) return;
   const page = parseInt(card.dataset.page) || 1;
   scrollPdfToPage(page);
-  highlightPdfPage(page);
 });
 
 /* Synchronized scrolling between PDF and standalone annotation panel */

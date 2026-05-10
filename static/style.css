@@ -250,7 +250,6 @@ html, body {
   box-shadow: var(--shadow-page);
   border-radius: 2px; overflow: hidden;
   transition: width .1s, height .1s;
-  cursor: pointer;
 }
 .pdf-page-wrapper canvas { display: block; }
 
@@ -277,14 +276,18 @@ html, body {
   position: relative;
 }
 
+/* Alternate row tint so adjacent paragraphs are visually distinct */
+.para-row:nth-child(even) .zh-cell { background: #fafbfc; }
+.para-row:nth-child(even) .ann-cell { background: #f4f6f9; }
+
 .zh-cell {
   flex: 1; min-width: 0;
-  padding: 8px 16px 8px 14px;
-  border-right: 1px solid #edf0f4;
+  padding: 5px 18px 5px 14px;
+  border-right: 1px solid #e8edf2;
 }
 .ann-cell {
   width: var(--ann-w); flex-shrink: 0;
-  padding: 8px 10px;
+  padding: 5px 12px;
   background: var(--ann-bg);
   display: flex; align-items: flex-start;
 }
@@ -292,29 +295,12 @@ html, body {
 /* ── Paragraph number badge ── */
 .para-num {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 20px; height: 16px; border-radius: 3px;
-  background: #e2e8f0; color: #94a3b8;
+  min-width: 22px; height: 18px; border-radius: 3px;
+  background: #e2e8f0; color: #64748b;
   font-size: 10px; font-family: monospace; font-weight: 700;
   margin-bottom: 4px; padding: 0 4px;
   user-select: none;
 }
-
-/* ── Jump-highlight animations ── */
-@keyframes row-flash {
-  0%, 25% { box-shadow: inset 0 0 0 2px var(--primary); }
-  100%    { box-shadow: inset 0 0 0 2px transparent; }
-}
-@keyframes pdf-flash {
-  0%, 25% { box-shadow: 0 0 0 3px var(--primary), var(--shadow-page); }
-  100%    { box-shadow: var(--shadow-page); }
-}
-@keyframes ann-flash {
-  0%, 25% { background: #bfdbfe; }
-  100%    { background: #eff6ff; }
-}
-.para-row.jump-highlight        { animation: row-flash 1.4s ease-out forwards; }
-.pdf-page-wrapper.jump-highlight { animation: pdf-flash 1.4s ease-out forwards; }
-.ann-card-standalone.jump-highlight { animation: ann-flash 1.4s ease-out forwards; }
 
 /* ── Chinese text ── */
 .zh-text {
